@@ -5,9 +5,6 @@ const nextConfig = {
             "yhjqzdermadrwrgecbcc.supabase.co"
         ]
     },
-    experimental: {
-        ppr: true,
-    }
 }
 
 module.exports = nextConfig
