@@ -1,113 +1,125 @@
-import Image from 'next/image'
+import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import PostCard from '@/components/PostCard'
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+export default async function Index() {
+  
+  const cookieStore = cookies()
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  const supabase = createClient(cookieStore)
+  const { data: {user} } = await supabase.auth.getUser()
+  const id = await user?.id
+  const { data: { session } } = await supabase.auth.getSession()
+
+  const { data, error} = await supabase.from('profiles').select().eq('id', id).single()
+  const username = await data?.username
+
+  const getPost = async () => {
+
+    const getPostUsername = async () => {
+      
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const {data, error } = await supabase.from('posts').select()
+      const username = await data
+      const image_path = await data
+      return { data, username, image_path }
+    }
+    const username1 = await getPostUsername()
+    const username = await username1?.data
+    const imagepath = await username1?.data
+    const image_path = await imagepath?.map((image) => {
+      return image.image_path
+    })
+    const user_name = await username?.map((user) => {
+      return user.username
+    })
+  
+    const getPostPhotoPath = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data: {publicUrl} } = await supabase.storage.from('posts').getPublicUrl(`${image_path}`)
+      const content = await publicUrl
+      return content
+    }
+
+    const content = await getPostPhotoPath()
+
+    const getPostCaption = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data } = await supabase.from('posts').select().single()
+      const caption = await data?.caption
+      return caption
+    }
+    const caption = await getPostCaption()
+  
+    const getUser_Id = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data } = await supabase.from('posts').select().single()
+      const userid = await data?.user_id
+      
+      return userid
+    }
+    const userid = await getUser_Id()
+  
+    const getAvatar = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data: {publicUrl} } = await supabase.storage.from('avatar').getPublicUrl(`${userid}/avatar`)
+      return publicUrl
+    }
+    const avatar = await getAvatar()
+  
+    const getPostId = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data } = await supabase.from('posts').select('id')
+      const id = await data?.map((i) => {
+        return i.id
+      })
+      
+      return id
+    }
+    const post_id = await getPostId()
+    const postID = await post_id?.map((id) => {
+      return id
+    })
+  
+    const getPosts = async () => {
+      const cookieStore = cookies()
+      const supabase = createClient(cookieStore)
+      const { data } = await supabase.from('posts').select('*')
+      return data
+    }
+    const posts = await getPosts()
+    return { content, user_name, caption, avatar, postID, posts }
+  }
+  const { posts } = await getPost()
+  
+  
+  let PostCards = posts?.reverse().map((post) => {
+    const created = post.created_at.split('T')[0]
+    const created_date = new Date(`${created}`).toLocaleTimeString('default', { month: 'long', day: 'numeric', year: 'numeric' })
+    return (
+      <div key={post.id.toString()}>
+        <PostCard
+          avatar={`https://yhjqzdermadrwrgecbcc.supabase.co/storage/v1/object/public/avatar/${post.user_id}/avatar`}
+          username={`@${post.username}`}
+          content={`https://yhjqzdermadrwrgecbcc.supabase.co/storage/v1/object/public/posts${post.image_path}`}
+          description={post.caption}
+          userid={`/profile/${post.username.toString()}`}
+          id={post.id.toString()}
+          created_at={created_date}
         />
       </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    )
+  })
+  return (
+    <main className='flex flex-col relative gap-12 py-8'>
+      {PostCards}
     </main>
   )
 }
