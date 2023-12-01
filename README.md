@@ -1,5 +1,8 @@
 # Social Media App
 
+## Live Project Domain
+https://social-media-qnqvxju7w-brady-burns-projects.vercel.app/
+
 ## Description
 
 This Social Media App, developed by Brady Burns, is a dynamic and interactive platform designed for seamless social networking. Built with Next.js and TypeScript, it combines robust functionality with an intuitive user experience, ideal for connecting individuals across the globe.
