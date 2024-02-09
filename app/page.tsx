@@ -11,7 +11,9 @@ export default async function Index() {
   const { data: {user} } = await supabase.auth.getUser()
   const id = await user?.id
   const { data: { session } } = await supabase.auth.getSession()
-
+  if (!session) {
+    redirect('/login')
+  }
   const { data, error} = await supabase.from('profiles').select().eq('id', id).single()
   const username = await data?.username
 
